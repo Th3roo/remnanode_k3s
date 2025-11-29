@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  selector:
+    app: {{ .Release.Name }}
+  ports:
+    - port: 80
+      name: http
+      targetPort: http
+    - port: {{ .Values.node.ports.reality }}
+      name: reality
+      targetPort: reality
+    - port: {{ .Values.node.ports.mixed }}
+      name: mixed
+      targetPort: mixed

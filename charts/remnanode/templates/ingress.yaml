@@ -1,0 +1,33 @@
+# 1. HTTPS для сайта (TLS termination)
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ .Release.Name }}-web
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`{{ .Values.domain.main }}`)
+      kind: Rule
+      services:
+        - name: {{ .Release.Name }}
+          port: 80
+  tls:
+    certResolver: le
+
+---
+# 2. TCP Passthrough для Reality (маскировка)
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: {{ .Release.Name }}-reality
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: {{ range $i, $d := .Values.domain.reality }}{{ if $i }} || {{ end }}HostSNI(`{{ $d }}`){{ end }}
+      services:
+        - name: {{ .Release.Name }}
+          port: {{ .Values.node.ports.reality }}
+  tls:
+    passthrough: true

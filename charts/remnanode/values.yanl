@@ -1,0 +1,26 @@
+# Настройки образа сайта (из твоего первого репо)
+website:
+  image: ghcr.io/YOUR_USER/backrooms-site:latest
+  pullPolicy: Always
+
+# Настройки Remnanode
+node:
+  image: remnawave/node:latest
+  apiPort: 2222
+  # Порты для Xray (должны совпадать с панелью)
+  ports:
+    reality: 10000
+    mixed: 10001
+
+# Домены
+domain:
+  main: "your_domain.com" # Твой домен
+  reality: # Домены для SNI роутинга (маскировка)
+    - "microsoft.com"
+    - "dl.google.com"
+
+# Email для SSL (Let's Encrypt)
+email: "admin@example.com"
+
+# Секреты (оставляем пустыми, перезапишем через secrets.yaml)
+secretKey: ""
