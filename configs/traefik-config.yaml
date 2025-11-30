@@ -7,8 +7,14 @@ spec:
   valuesContent: |-
     additionalArguments:
       - "--certificatesresolvers.le.acme.tlschallenge=true"
-      - "--certificatesresolvers.le.acme.email=YOUR_EMAIL_PLACEHOLDER"
+      # Email берется из переменной окружения
       - "--certificatesresolvers.le.acme.storage=/data/acme.json"
+    env:
+      - name: TRAEFIK_CERTIFICATESRESOLVERS_LE_ACME_EMAIL
+        valueFrom:
+          secretKeyRef:
+            name: traefik-acme-secret
+            key: email
     ports:
       web:
         redirectTo: websecure

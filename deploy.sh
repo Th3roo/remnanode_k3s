@@ -38,8 +38,14 @@ fi
 EMAIL=$(grep 'email:' secrets.yaml | awk '{print $2}' | tr -d '"')
 echo -e "${GREEN}>>> Настройка SSL для $EMAIL...${NC}"
 
-# Подставляем email в конфиг Traefik и применяем
-sed "s/YOUR_EMAIL_PLACEHOLDER/$EMAIL/" configs/traefik-config.yaml | kubectl apply -f -
+# Создаем секрет с email (если изменился - обновится)
+kubectl create secret generic traefik-acme-secret \
+  --from-literal=email=$EMAIL \
+  --namespace kube-system \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# Применяем конфиг Traefik
+kubectl apply -f configs/traefik-config.yaml
 
 # 4. Деплой приложения
 echo -e "${GREEN}>>> Деплой RemnaNode через Helm...${NC}"
