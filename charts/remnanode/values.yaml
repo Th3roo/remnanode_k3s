@@ -1,6 +1,6 @@
 # Настройки образа сайта (из твоего первого репо)
 website:
-  image: ghcr.io/YOUR_USER/backrooms-site:latest
+  image: th3ro/remnanode_website:latest
   pullPolicy: Always
 
 # Настройки Remnanode
