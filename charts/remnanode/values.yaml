@@ -12,12 +12,13 @@ email: "admin@example.com"
 
 secretKey: ""
 
-# ГИБКАЯ НАСТРОЙКА ВХОДЯЩИХ СОЕДИНЕНИЙ
-# mode:
-#   - ingress: скрывает трафик за 443 портом (требует sni_domains)
-#   - direct: открывает порт прямо на хосте (через hostPort/NodePort)
+# Типы режимов (mode):
+# - ingress-sni:  TCP Passthrough через Traefik (для Reality/Trojan). Требует 'sni'.
+# - ingress-path: HTTP/WS роутинг через Traefik (для WebSocket). Требует 'path'.
+# - direct:       Прямой доступ (HostPort).
+
 inbounds: []
-# Пример (будет в secrets.yaml):
+# Пример структуры для secrets.yaml:
 # - name: reality
 #   port: 10000        # Порт внутри контейнера
 #   mode: ingress      # Работает через Traefik (443)

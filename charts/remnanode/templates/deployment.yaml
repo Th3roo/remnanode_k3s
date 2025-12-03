@@ -61,13 +61,35 @@ spec:
           ports:
             # --- АВТОМАТИЧЕСКАЯ ГЕНЕРАЦИЯ ПОРТОВ ---
             {{- range .Values.inbounds }}
+            
+            # 1. TCP правило (Создается всегда)
             - containerPort: {{ .port }}
-              name: {{ .name }}
+              name: {{ .name }}-tcp
+              protocol: TCP
               {{- if eq .mode "direct" }}
-              hostPort: {{ .port }} # Важно! Биндим порт прямо на хост, минуя Ingress (максимальная скорость)
+              hostPort: {{ .port }} # Биндим TCP на хост
               {{- end }}
-              protocol: {{ default "TCP" .protocol }}
+
+            # 2. UDP правило (Только для direct)
+            # Shadowsocks и VLESS требуют UDP для полноценной работы
+            {{- if eq .mode "direct" }}
+            - containerPort: {{ .port }}
+              name: {{ .name }}-udp
+              protocol: UDP
+              hostPort: {{ .port }} # Биндим UDP на хост
             {{- end }}
+
+            {{- end }}
+            
+            # Хак для поддержки UDP на тех же портах (Shadowsocks часто требует оба)
+            {{- if eq .mode "direct" }}
+            - containerPort: {{ .port }}
+              name: {{ .name }}-udp
+              protocol: UDP
+              hostPort: {{ .port }} # Прямой доступ UDP
+            {{- end }}
+            {{- end }}
+
           volumeMounts:
             - name: xray-data
               mountPath: /usr/local/bin/geoip.dat

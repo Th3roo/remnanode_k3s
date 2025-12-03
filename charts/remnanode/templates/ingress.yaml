@@ -1,4 +1,4 @@
-# 1. HTTPS для сайта
+# 1. Основной сайт (заглушка)
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
@@ -16,25 +16,52 @@ spec:
     certResolver: le
 
 ---
-# 2. TCP Passthrough для Reality
-# Генерируем IngressRouteTCP только для инбаундов с mode: ingress
+# 2. Обработка WebSocket (Path routing)
+# Создаем правило только если есть инбаунды с mode: ingress-path
 {{- range .Values.inbounds }}
-{{- if eq .mode "ingress" }}
+{{- if eq .mode "ingress-path" }}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ $.Release.Name }}-{{ .name }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    # Матчим по домену И по пути (например /api/media/)
+    - match: Host(`{{ $.Values.domain }}`) && PathPrefix(`{{ .path }}`)
+      kind: Rule
+      services:
+        - name: {{ $.Release.Name }}
+          port: {{ .port }}
+          # Включаем поддержку WebSocket и Sticky sessions (если надо)
+          passHostHeader: true
+  tls:
+    certResolver: le
+---
+{{- end }}
+{{- end }}
+
+# 3. Обработка Reality/Trojan (SNI Routing)
+# Создаем TCP роуты для mode: ingress-sni
+{{- range .Values.inbounds }}
+{{- if eq .mode "ingress-sni" }}
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRouteTCP
 metadata:
   name: {{ $.Release.Name }}-{{ .name }}
 spec:
   entryPoints:
-    - websecure # Слушаем на 443
+    - websecure
   routes:
-    # Собираем все домены SNI через OR (||)
     - match: {{ range $i, $d := .sni }}{{ if $i }} || {{ end }}HostSNI(`{{ $d }}`){{ end }}
       services:
         - name: {{ $.Release.Name }}
           port: {{ .port }}
+          proxyProtocol:
+            version: 1 # Опционально: если в Xray включен acceptProxyProtocol
   tls:
-    passthrough: true
+    passthrough: true # Пробрасываем шифрованный трафик до Xray
 ---
 {{- end }}
 {{- end }}

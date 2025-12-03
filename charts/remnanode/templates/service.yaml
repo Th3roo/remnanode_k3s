@@ -9,9 +9,12 @@ spec:
     - port: 80
       name: http
       targetPort: http
-    - port: {{ .Values.node.ports.reality }}
-      name: reality
-      targetPort: reality
-    - port: {{ .Values.node.ports.mixed }}
-      name: mixed
-      targetPort: mixed
+    
+    # Добавляем порты, которые идут через Traefik (SNI или Path)
+    {{- range .Values.inbounds }}
+    {{- if or (eq .mode "ingress-sni") (eq .mode "ingress-path") }}
+    - port: {{ .port }}
+      name: {{ .name }}
+      targetPort: {{ .port }}
+    {{- end }}
+    {{- end }}
