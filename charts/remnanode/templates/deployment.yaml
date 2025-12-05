@@ -59,17 +59,16 @@ spec:
             - name: XRAY_LOCATION_ASSET
               value: /usr/local/bin
           ports:
-            # --- 0. API PORT (УПРАВЛЕНИЕ) ---
-            # remnaware api port
+            # --- 1. API PORT (Для управления из панели) ---
             - containerPort: {{ .Values.node.apiPort }}
-              name: api-port
+              name: api
               protocol: TCP
               hostPort: {{ .Values.node.apiPort }}
 
-            # --- АВТОМАТИЧЕСКАЯ ГЕНЕРАЦИЯ ПОРТОВ (ТРАФИК) ---
+            # --- 2. АВТОМАТИЧЕСКАЯ ГЕНЕРАЦИЯ ПОРТОВ (Inbounds) ---
             {{- range .Values.inbounds }}
             
-            # 1. TCP правило
+            # TCP
             - containerPort: {{ .port }}
               name: tcp-{{ .port }}
               protocol: TCP
@@ -77,12 +76,14 @@ spec:
               hostPort: {{ .port }}
               {{- end }}
 
-            # 2. UDP правило (Только для direct)
+            # UDP (для direct)
             {{- if eq .mode "direct" }}
             - containerPort: {{ .port }}
               name: udp-{{ .port }}
               protocol: UDP
               hostPort: {{ .port }}
+            {{- end }}
+
             {{- end }}
 
           volumeMounts:
