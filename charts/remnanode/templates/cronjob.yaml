@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: {{ .Release.Name }}-daily-update
 spec:
-  schedule: "0 4 * * *" # Каждый день в 4:00 утра
+  schedule: "0 4 * * *" # Daily at 4:00 AM
   jobTemplate:
     spec:
       template:

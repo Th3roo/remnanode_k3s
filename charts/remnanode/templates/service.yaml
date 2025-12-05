@@ -10,9 +10,8 @@ spec:
       name: http
       targetPort: http
     
-    # Генерируе  порты для ВСЕХ режимов, которые идут через Traefik
+    # Expose ports for all Ingress-based modes (SNI, Path, gRPC, XHTTP)
     {{- range .Values.inbounds }}
-    # Если режим НЕ direct -> значит это Ingress, и нам нужен порт в Service
     {{- if ne .mode "direct" }}
     - port: {{ .port }}
       name: {{ .name }}

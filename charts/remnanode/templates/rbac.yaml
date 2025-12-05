@@ -8,7 +8,7 @@ kind: Role
 metadata:
   name: {{ .Release.Name }}-restarter
 rules:
-  # Разрешаем управлять Deployments
+  # Allow managing Deployments for restart purposes
   - apiGroups: ["apps", "extensions"]
     resources: ["deployments"]
     verbs: ["get", "patch", "list", "watch"]

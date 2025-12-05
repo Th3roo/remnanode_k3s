@@ -5,25 +5,25 @@ metadata:
   namespace: kube-system
 spec:
   valuesContent: |-
-    # Логи
+    # Logging
     logs:
       general:
         level: DEBUG
     
-    # Сохраняем сертификаты при перезапуске
+    # Persistence for ACME (SSL certificates)
     persistence:
       enabled: true
       path: /acme
       size: 128Mi
     
-    # Аргументы для Let's Encrypt
+    # Let's Encrypt arguments
     additionalArguments:
       - "--certificatesresolvers.le.acme.tlschallenge=true"
       - "--certificatesresolvers.le.acme.storage=/acme/acme.json"
       - "--certificatesresolvers.le.acme.email=$(TRAEFIK_CERTIFICATESRESOLVERS_LE_ACME_EMAIL)"
       - "--certificatesresolvers.le.acme.caServer=https://acme-v02.api.letsencrypt.org/directory"
 
-    # Прокидываем email из секретов
+    # Inject Email from Secrets
     env:
       - name: TRAEFIK_CERTIFICATESRESOLVERS_LE_ACME_EMAIL
         valueFrom:
@@ -31,7 +31,7 @@ spec:
             name: traefik-acme-secret
             key: email
     
-    # НОВЫЙ СИНТАКСИС РЕДИРЕКТА HTTP -> HTTPS
+    # HTTP -> HTTPS Redirection (Traefik v3 syntax)
     ports:
       web:
         redirections:

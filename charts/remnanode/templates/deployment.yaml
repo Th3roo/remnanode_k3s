@@ -7,7 +7,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate # Для Xray лучше Recreate, чтобы не занимать порты дважды
+    type: Recreate # Recreate strategy prevents port conflicts during updates
   selector:
     matchLabels:
       app: {{ .Release.Name }}
@@ -16,6 +16,7 @@ spec:
       labels:
         app: {{ .Release.Name }}
       annotations:
+        # Force pod recreation if secrets change
         checksum/config: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
     spec:
       serviceAccountName: {{ .Release.Name }}-updater
@@ -37,12 +38,15 @@ spec:
           mountPath: /data
 
       containers:
+        # 1. Website Sidecar
         - name: website
           image: {{ .Values.website.image }}
+          pullPolicy: {{ .Values.website.pullPolicy }}
           ports:
             - containerPort: 80
               name: http
 
+        # 2. Remnanode Xray Core
         - name: remnanode
           image: {{ .Values.node.image }}
           securityContext:
@@ -59,16 +63,16 @@ spec:
             - name: XRAY_LOCATION_ASSET
               value: /usr/local/bin
           ports:
-            # --- 1. API PORT (Для управления из панели) ---
+            # Management API Port (exposed via HostPort for mTLS)
             - containerPort: {{ .Values.node.apiPort }}
               name: api
               protocol: TCP
               hostPort: {{ .Values.node.apiPort }}
 
-            # --- 2. АВТОМАТИЧЕСКАЯ ГЕНЕРАЦИЯ ПОРТОВ (Inbounds) ---
+            # Dynamic Inbound Ports
             {{- range .Values.inbounds }}
             
-            # TCP
+            # TCP Rule
             - containerPort: {{ .port }}
               name: tcp-{{ .port }}
               protocol: TCP
@@ -76,7 +80,7 @@ spec:
               hostPort: {{ .port }}
               {{- end }}
 
-            # UDP (для direct)
+            # UDP Rule (Only for Direct mode)
             {{- if eq .mode "direct" }}
             - containerPort: {{ .port }}
               name: udp-{{ .port }}
