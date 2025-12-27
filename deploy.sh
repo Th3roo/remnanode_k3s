@@ -40,8 +40,8 @@ if ! command -v helm &> /dev/null; then
     curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 fi
 
-# 3. Traefik Check & Setup
-echo -e "${GREEN}>>> preparing Traefik...${NC}"
+# 3. Traefik Setup
+echo -e "${GREEN}>>> Preparing Traefik Configuration...${NC}"
 
 # Extract Email and Domain
 EMAIL=$(grep 'email:' secrets.yaml | awk '{print $2}' | tr -d '"')
@@ -63,15 +63,40 @@ kubectl create secret generic traefik-acme-secret \
 # Apply Config
 kubectl apply -f configs/traefik-config.yaml
 
-# 4. ROBUST WAIT: Ensure Traefik is restarted with new config
-echo -e "${GREEN}>>> Waiting for Traefik to reload with ACME settings...${NC}"
+# 4. ROBUST WAIT: Find Traefik and ensure it reloads
+echo -e "${GREEN}>>> Waiting for Traefik Deployment to appear...${NC}"
 
-# Force restart to pick up changes immediately if HelmChartConfig takes too long
-kubectl rollout restart deployment/traefik -n kube-system
+# Wait until K3s actually creates the deployment (can take time on fresh install)
+MAX_WAIT_LOOPS=60
+LOOP_COUNT=0
+TRAEFIK_DEPLOY=""
+
+while [ $LOOP_COUNT -lt $MAX_WAIT_LOOPS ]; do
+    # Try to find deployment by label (works even if name varies)
+    TRAEFIK_DEPLOY=$(kubectl get deploy -n kube-system -l app.kubernetes.io/name=traefik -o name | head -n 1)
+    
+    if [ ! -z "$TRAEFIK_DEPLOY" ]; then
+        echo -e "Found Traefik: $TRAEFIK_DEPLOY"
+        break
+    fi
+    
+    echo -n "."
+    sleep 2
+    LOOP_COUNT=$((LOOP_COUNT+1))
+done
+
+if [ -z "$TRAEFIK_DEPLOY" ]; then
+    echo -e "\n${YELLOW}ERROR: Traefik deployment never appeared. Check K3s status.${NC}"
+    exit 1
+fi
+
+echo -e "\n${GREEN}>>> Restarting Traefik to apply ACME settings...${NC}"
+# Force restart to pick up changes immediately
+kubectl rollout restart $TRAEFIK_DEPLOY -n kube-system
 
 # Wait for the rollout to actually finish
 echo "Waiting for Traefik deployment rollout..."
-kubectl rollout status deployment/traefik -n kube-system --timeout=180s
+kubectl rollout status $TRAEFIK_DEPLOY -n kube-system --timeout=180s
 
 # Double check readiness check
 echo "Verifying Traefik readiness..."
